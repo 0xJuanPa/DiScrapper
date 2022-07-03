@@ -6,7 +6,7 @@ import threading
 import time
 
 from ._IdComparable import IdComparable
-from .custom_xrpc import RedirectNodeResponse, ThreadedXRPCServer,register_type_unmarshaller
+from .custom_xrpc import RedirectNodeResponse, ThreadedXRPCServer, register_type_unmarshaller
 from .ChordNodeRemote import RemoteChordNode
 from .InfoContainer import InfoContainer
 from .tools.OrderedUniqueList import OrderedUniqueList
@@ -23,7 +23,8 @@ class ChordNode(IdComparable):
         res = RemoteChordNode.make_remote_node(addr)
         return res
 
-    def __init__(self, port=4440, interface="127.0.0.1",*,logger=None, keypair=None, ca_file=None, iterative=True,aditional_types=None):
+    def __init__(self, port=4440, interface="127.0.0.1", *, logger=None, keypair=None, ca_file=None, iterative=True,
+                 aditional_types=None):
         # param validation and primitives
         assert interface != "0.0.0.0"  # only allow one interface, it does not make sense for the id
         super(IdComparable, self).__init__()
@@ -33,7 +34,7 @@ class ChordNode(IdComparable):
 
         self.logger = logger or CustomLogger.get_logger(__name__)
 
-        self.logger.info(f"Starting Chord node {repr(self)}")
+        self.logger.info(f"Starting Chord node {repr(self)} id: {self.id}")
 
         self.folder = Path(f"storage/{str(self.id)}")
         self.folder.mkdir(parents=True, exist_ok=True)
@@ -58,13 +59,12 @@ class ChordNode(IdComparable):
         else:
             self._rpc_server = ThreadedXRPCServer(addr=self.Address, allow_none=True, logRequests=False)
 
-
         # rpc config
 
         # type(self) to allow inheriting from ChordNode
-        required_types = [type(self),RemoteChordNode,InfoContainer]
+        required_types = [type(self), RemoteChordNode, InfoContainer]
         self._rpc_server.register_instance(self)
-        aditional_types = required_types if not isinstance(aditional_types,list) else aditional_types + required_types
+        aditional_types = required_types if not isinstance(aditional_types, list) else aditional_types + required_types
         for t in aditional_types:
             register_type_unmarshaller(t)
 
@@ -105,7 +105,7 @@ class ChordNode(IdComparable):
         self.debug_thread.start()
 
     def __repr__(self):
-        return f"ChordNode {self.Address}" #+ f" {self.id}"
+        return f"ChordNode {self.Address}"  # + f" {self.id}"
 
     def _listMethods(self):
         return []  # empty  # list(filter(lambda m: m.__name__.isupper(), list_public_methods(self)))
@@ -172,7 +172,7 @@ class ChordNode(IdComparable):
             try:
                 x = successor.Predecessor()
                 if between(L=self.id, R=successor.id, id_=x.id) or (successor == self and x != self):
-                    self.logger.warning(f"Stabilized successor from {successor} to {x}")
+                    self.logger.warning(f"StabSucc from {successor} to {x}")
                     self.finger[0] = x
                     successor = x
             except BaseException as e:  # maybe catch spec exept
@@ -226,7 +226,7 @@ class ChordNode(IdComparable):
                 next_succ = self.Find_Successor(fid)
                 if next_succ.id == self.id:  # break because i will no longer find something better than me
                     if next_ > 0:
-                        self.finger[next_] = None # clean it
+                        self.finger[next_] = None  # clean it
                     break
                 if next_succ not in self.finger:
                     self.logger.warning(f"Fixed finger {next_} from {self.finger[next_]} to {next_succ}")
@@ -246,55 +246,47 @@ class ChordNode(IdComparable):
             try:
                 res = node.Owner_Of(info_.id, self.Address[1], True)
             except BaseException as e:
-                self.logger.error(f"Err proposing to {node} {e}")
+                self.logger.error(f"Err proposing to {node} err: {e}")
                 return False
             match res:
                 case "y":
-                    self.logger.info(f"fix c: {node} has key {info_.id}")
+                    self.logger.info(f"{node} has {info_.id}")
                 case "n":
-                    self.logger.warning(f"fix c: {node} rejected key {info_.id}")
+                    self.logger.warning(f"{node} rejected {info_.id}")
                 case "m":
-                    self.logger.info(f"fix c: {node} missing {info_.id}")
+                    self.logger.warning(f"{node} missing {info_.id}")
                     try:
                         node.Push(info_, self.Address[1], recurse, False)
                     except BaseException as e:
-                        self.logger.error(f"fix c: Err sending {info.id} to {node} in prop {e}")
+                        self.logger.error(f"Err sending {info.id} to {node} in prop {e}")
                         return "n"
                 case "-":
-                    self.logger.warning(f"fix c: {node} is in invalid state")
+                    self.logger.warning(f"{node} is in invalid state")
             return res
 
         while True:
             polling_interval = max(self.fix_content_polling, 5 / (len(self.database) + 1))
-
             time.sleep(polling_interval)
-            # predecessor = self.Predecessor()
-            # if predecessor == self:
-            #     continue
-            # content = self.database.get_bigger(self) # filter out keys that are not owned by me
-            # if self.Predecessor() < self:
-            #     smaller = self.database.get_smaller_or_equal(self.Predecessor())
-            #     content = itertools.chain(content, smaller)
             content = self.database
             for info in content:
                 time.sleep(polling_interval)
-
                 predecessor = self.Predecessor()
                 successor = self.Successor()
                 if predecessor == self or successor == self:
                     continue
 
-                im_owner = self.Owner_Of(info.id, self.Address[1], True, self.Address)
+                im_owner = self.Owner_Of(info.id, self.Address[1], False, self.Address)
                 tnode = self if im_owner == "y" else self.Find_Successor(info.id)
                 if tnode == self:
                     resp = _propose_and_send(node=successor, info_=info, recurse=False)
                     tnode = successor
                 else:
-                    recurse_push = False if tnode == predecessor else True
+                    recurse_push = False # if tnode == predecessor else True
                     resp = _propose_and_send(node=tnode, info_=info, recurse=recurse_push)
 
+                # not mine and not deleting predecessor keys
                 if im_owner == "n" and (resp == "y" or resp == "m") and tnode != predecessor:
-                    recurse_del = True  # if tnode != successor else 0
+                    recurse_del = False  # True if tnode != successor else False
                     self.Delete(info.id, self.Address[1], recurse_del, False, self.Address)
 
     # ---------------------- DHT CORE OPS ---------------------- #
@@ -342,7 +334,7 @@ class ChordNode(IdComparable):
             return successor
         # paper else
 
-        if id_ > self.id > successor.id:  # im the largest so i will keep em
+        if id_ >= self.id > successor.id:  # im the largest so i will keep em
             return self
 
         i = len(self.finger) * 2
@@ -374,7 +366,7 @@ class ChordNode(IdComparable):
         n0 = RemoteChordNode.make_remote_node(addr)
         pred = self.predecessor
         if pred is None or between(L=pred.id, R=self.id, id_=n0.id):
-            self.logger.warning(f"Notified Updating predecessor from {pred} to {n0}")
+            self.logger.warning(f"Notified Updpred from {pred} to {n0}")
             self.predecessor = n0
 
     # ---------------------- CRUD ---------------------- #
@@ -384,10 +376,11 @@ class ChordNode(IdComparable):
         successor = self.Successor()
         n0 = RemoteChordNode.make_remote_node(address=(i_addr[0], dstport))
         if predecessor == self or successor == self:  # todo give me a copy and dont delete it
-            self.logger.warning(f"telling to {n0} my info is incomplete {self.Address}")
+            self.logger.error(f"Telling {n0} im broke {self.Address}")
             return "-"
 
-        belongs_to_my_range = self.id == id_ or between(L=predecessor.id, R=self.id, id_=id_)
+
+        belongs_to_my_range = self.id == id_ or predecessor.id < id_ < self.id  # between(L=predecessor.id, R=self.id, id_=id_)
         im_last_n_key_bigger_than_me = self.id > successor.id and id_ >= self.id
         # in case of remote call # or recurse and predecessor.Owner_of(id_, self.Address[1], False)
         is_from_predecessor_and_valid = predecessor.id == n0.id and (
@@ -395,11 +388,11 @@ class ChordNode(IdComparable):
 
         if im_last_n_key_bigger_than_me or belongs_to_my_range or is_from_predecessor_and_valid:
             res = "y" if id_ in self.database else "m"
-            self.logger.info(f"telling to {n0} that {id_} belongs to me {self.Address} {res}")
+            self.logger.info(f"Telling {n0} that {id_} {res} is mine {self.Address} ")
             return res
         else:
             self.logger.log(logging.WARNING if n0 != self else logging.INFO,
-                            f"telling to {n0} that {id_} not belongs to me {self.Address}")
+                            f"Telling {n0} that {id_} not mine {self.Address}")
             return "n"
 
     def Push(self, info, dstport, recurse=True, resolve=True, i_addr=None, i_remote=None):
@@ -411,7 +404,7 @@ class ChordNode(IdComparable):
                 return tnode.Push(info, dstport, recurse, True)
         self.database.append(info)
         info.write()
-        self.logger.warning(f"{dstport} Pushed info:{info} recurse {recurse}")
+        self.logger.warning(f"{i_addr[0], dstport} Pushed in me {self} this {info} recurse {recurse}")
         if recurse > 0:
             successor = self.Successor()
             if successor != self:
@@ -422,7 +415,7 @@ class ChordNode(IdComparable):
         if id_ in self.database:
             self.database.find_like(id_).delete()
             self.database.remove(id_)
-            self.logger.warning(f"{dstport} Deleted {id_} on me {self.Address}")
+            self.logger.warning(f"{i_addr[0], dstport} Deleted in me {self.Address} this {id_} recurse {recurse}")
 
         if resolve and self.Owner_Of(id_, dstport, True, i_addr) == "n":
             tnode: ChordNode = self.Find_Successor(id_)
@@ -445,5 +438,5 @@ class ChordNode(IdComparable):
                 if self.iterative_scheme and i_remote:
                     return RedirectNodeResponse(tnode)
                 return tnode.Pull(id_, dstport, True)
-        self.logger.warning(f'{dstport} asked for {id} got {value}')
+        self.logger.warning(f"{i_addr[0], dstport} Pullede in me {self.Address} this {id_}")
         return value
