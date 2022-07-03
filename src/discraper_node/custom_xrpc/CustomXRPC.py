@@ -31,13 +31,13 @@ class RedirectNodeResponse:
 class DiSRequestHandler(SimpleXMLRPCRequestHandler):
 
     def _is_valid_post_method(self, method: str):
-        if not method[0].isupper():
+        if len(method) < 3 or not method[0].isupper():
             logger.error('method "' + method + f'" is not supported on POST by {self.client_address}')
             return False
         return True
 
     def _is_valid_get_method(self, method: str):
-        if not all(map(str.isupper, method)):
+        if len(method) < 3 or not all(map(str.isupper, method)):
             logger.error('method "' + method + f'" is not supported on GET {self.client_address}')
             return False
         return True
