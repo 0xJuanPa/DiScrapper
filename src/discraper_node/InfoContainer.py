@@ -9,8 +9,10 @@ from ._IdComparable import IdComparable
 class InfoContainer(IdComparable):
     @staticmethod
     def unmarshall(val):
-        res = val.get("Address")
-        res = InfoContainer(res)
+        address = val.get("Address")
+        content = val.get("Content")
+        refs = val.get("Refs")
+        res = InfoContainer(address, content=content, refs=refs)
         return res
 
     @staticmethod
@@ -20,9 +22,8 @@ class InfoContainer(IdComparable):
             address = js["Address"]
             refs = js["Refs"]
             blob_file = js["BlobFile"]
-            res = InfoContainer(address, refs=refs, blob_file=blob_file,desc=descriptor)
+            res = InfoContainer(address, refs=refs, blob_file=blob_file, desc=descriptor)
             return res
-
 
     def __init__(self, adrr, *, refs=None, content=None, blob_file=None, desc=None):
         super(IdComparable, self).__init__()

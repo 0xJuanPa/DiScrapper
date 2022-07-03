@@ -73,7 +73,7 @@ class DiSNode(ChordNode):
                 return RedirectNodeResponse(n0)
             try:
                 res: InfoContainer = n0.SCRAP(level, url)
-                response.append(res)
+                response.extend(res)
             except Exception as e:
                 self.logger.error("Failed getting url " + url + f"in {n0} error {e}")
         else:
@@ -101,7 +101,7 @@ class DiSNode(ChordNode):
                     except Exception as e:
                         self.logger.error(f"Failed scraping {u} error {e}")
                         continue
-                    response.append(v)
+                    response.extend(v)
             return response
 
     def DELETE(self, level, url_or_id, i_remote=None):
@@ -111,21 +111,25 @@ class DiSNode(ChordNode):
         except:
             id_ = self.hasher(url_or_id)
         n0 = self.Find_Successor(id_)
+        response = []
         if n0 != self:
             self.logger.warning("Redirecting DELETE to " + str(n0))
             if self.iterative_scheme and i_remote:
                 return RedirectNodeResponse(n0)
             try:
-                n0.DELETE(level, id_)
+               response.extend(n0.DELETE(level, id_))
             except Exception as e:
                 self.logger.error("Failed deleting url " + url_or_id + f"in {n0} error {e}")
         else:
             self.logger.warning("Deleting " + url_or_id + " level " + str(level))
             info: InfoContainer = self.database.find_like(id_)
+            if info is not None:
+                response.append((info.Address, info.Id))
             self.Delete(id_, dstport=self.Address[1], recurse=True, resolve=False, i_addr=self.Address)
-            if level > 1:
+            if level > 1 and info is not None:
                 for u in info.refs:
-                    self.DELETE(level - 1, u)
+                    response.extend(self.DELETE(level - 1, u))
+        return response
 
     def GET(self, url_or_id, i_remote=None):
         try:
