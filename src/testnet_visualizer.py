@@ -163,6 +163,8 @@ def calculate(old, force=False):
             if nodestr != predstr:
                 if node.pred.id in known:
                     graph.edge(nodestr, predstr, color='red')
+                    #added_edges.add((nodestr, predstr))
+
 
         for node in vnodes:
             nodestr = str(node.addr)
@@ -234,6 +236,7 @@ def render():
                         index = i * maxcol + j
                         n = vnodes[index]
                         c.markdown(f'#### {index + 1}. {n}')
+                        c.markdown(f'id: {n.id}')
                         c.markdown(f'Pred: \r\n * {n.pred}')
                         c.markdown(f'Succ: \r\n * {n.succ}')
                         r = "\r\n * ".join(map(str, n.rsucc))

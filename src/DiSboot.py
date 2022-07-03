@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 parser = argparse.ArgumentParser(description='Boots a DiSnode')
-parser.add_argument('--baseport', type=int, default=4442, help='Base port')
+parser.add_argument('--baseport', type=int, default=4443, help='Base port')
 parser.add_argument("--joinport", type=int, default=4440, help="Port of the node to join")
 args = parser.parse_args()
 

@@ -8,7 +8,7 @@ parser = argparse.ArgumentParser(description='Bootstrap a testnet')
 parser.add_argument('--baseport', type=int, default=4440, help='Base port')
 parser.add_argument('--bootstrap_node_count', type=int, default=3, help='Number of bootstrap nodes')
 parser.add_argument('--stepsize', type=int, default=1, help='Stepsize for bootstrap nodes')
-parser.add_argument("--joinport", type=int, default=4440, help="Port of the node to join")
+parser.add_argument("--joinport", type=int, default=None, help="Port of the node to join")
 args = parser.parse_args()
 
 logger = logging.getLogger(__name__)
