@@ -53,11 +53,11 @@ class DiSRequestHandler(SimpleXMLRPCRequestHandler):
 
     def _report_500(self,e):
         self.send_response(500)
-        response = b'Internal Server Error'
+        response = f'Internal Server Error {e}'
         self.send_header("Content-type", "text/plain")
         self.send_header("Content-length", str(len(response)))
         self.end_headers()
-        self.wfile.write(response)
+        self.wfile.write(response.encode("utf-8"))
 
     def do_GET(self):
         # clean url + rest
@@ -106,10 +106,7 @@ class DiSRequestHandler(SimpleXMLRPCRequestHandler):
         # set content to json
         self.send_header("Content-type", "application/json")
         try:
-            filtered = dict(filter(lambda x: x[0][0].isupper(),
-                                   inspect.getmembers(result,
-                                                      lambda x: not inspect.ismethod(x) and not inspect.isclass(x))))
-            encoded_result = json.JSONEncoder().encode(filtered)
+            encoded_result = json.JSONEncoder().encode(result)
         except Exception as e:
             self._report_500(e)
             return

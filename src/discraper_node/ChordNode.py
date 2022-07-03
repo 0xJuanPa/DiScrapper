@@ -410,6 +410,7 @@ class ChordNode(IdComparable):
                     return RedirectNodeResponse(tnode)
                 return tnode.Push(info, dstport, recurse, True)
         self.database.append(info)
+        info.write()
         self.logger.warning(f"{dstport} Pushed info:{info} recurse {recurse}")
         if recurse > 0:
             successor = self.Successor()
@@ -419,6 +420,7 @@ class ChordNode(IdComparable):
 
     def Delete(self, id_, dstport, recurse=True, resolve=True, i_addr=None, i_remote=None):
         if id_ in self.database:
+            self.database.find_like(id_).delete()
             self.database.remove(id_)
             self.logger.warning(f"{dstport} Deleted {id_} on me {self.Address}")
 
