@@ -181,12 +181,6 @@ class DiSTransport(Transport):
     #     raise Exception("Unable to bind in range")
 
     def make_connection(self, host):
-        # proxy mod
-        self.host = host
-        if self.proxy:
-            host = self.proxy
-        # proxy mod
-
         # will not use keep alive
         chost, self._extra_headers, x509 = self.get_host_info(host)
         if self.context is not None:
@@ -200,14 +194,7 @@ class DiSTransport(Transport):
             if self.context is not None:
                 pass
 
-            # proxy mod
-            if self.proxy:
-                new_handler = f'http://{host}{handler}RPC2'  # todo use same uri style as self
-            else:
-                new_handler = handler
-            # proxy mod
-
-            resp = super().request(host, new_handler, request_body, verbose)
+            resp = super().request(host, handler, request_body, verbose)
             self.close()  # closing, no keep alive # this mehtod may not do anything though
 
             if len(resp) != 1 or not (self.followRedirects and isinstance(resp[0], RedirectNodeResponse)):
