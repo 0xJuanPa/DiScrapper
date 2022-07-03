@@ -1,6 +1,9 @@
 storage/
 .idea
 .vscode
+*.pem
+*.key
+*.crt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

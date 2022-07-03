@@ -23,7 +23,7 @@ class ChordNode(IdComparable):
         res = RemoteChordNode.make_remote_node(addr)
         return res
 
-    def __init__(self, port=4440, interface="127.0.0.1", *, logger=None, keypair=None, ca_file=None, iterative=True,
+    def __init__(self, port=4440, interface="127.0.0.1", *, logger=None, keypair_content=None, ca_content=None, iterative=True,
                  aditional_types=None):
         # param validation and primitives
         assert interface != "0.0.0.0"  # only allow one interface, it does not make sense for the id
@@ -45,14 +45,19 @@ class ChordNode(IdComparable):
         keypair_path = folder / f"{cryptoname}.crt", folder / f"{cryptoname}.key"
         ca_path = folder / f"ca.crt"
 
-        if keypair is not None and len(keypair) == 2:
-            keypair_path[0].write_text(keypair[0])
-            keypair_path[1].write_text(keypair[1])
+        keypair_path[0].unlink(missing_ok=True)
+        keypair_path[1].unlink(missing_ok=True)
+        ca_path.unlink(missing_ok=True)
 
-        if ca_file is not None:
-            ca_path.write_text(ca_file)
+        if keypair_content is not None and len(keypair_content) == 2:
+            keypair_path[0].write_text(keypair_content[0])
+            keypair_path[1].write_text(keypair_content[1])
+
+        if ca_content is not None:
+            ca_path.write_text(ca_content)
 
         if keypair_path[0].exists() and keypair_path[1].exists() and ca_path.exists():
+            self.logger.info(f"Using Secure Connection")
             self._rpc_server = ThreadedXRPCServer(addr=self.Address, keypair=keypair_path, ca_file=ca_path,
                                                   allow_none=True,
                                                   logRequests=False)

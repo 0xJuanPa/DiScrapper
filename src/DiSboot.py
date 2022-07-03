@@ -1,4 +1,5 @@
 import argparse
+from pathlib import Path
 
 from discraper_node import DiSNode
 import pprint
@@ -10,14 +11,48 @@ import logging
 logger = get_logger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-
-
 parser = argparse.ArgumentParser(description='Boots a DiSnode')
-parser.add_argument('--baseport', type=int, default=4443, help='Base port')
+parser.add_argument("--interface", type=str, default="127.0.0.1", help="Interface to listen on")
+parser.add_argument('--baseport', type=int, default=4441, help='Base port')
 parser.add_argument("--joinport", type=int, default=4440, help="Port of the node to join")
+parser.add_argument("--ca-path", type=str, default=None, help="Path to the CA certificate")
+parser.add_argument("--cert-path", type=str, default=None, help="Path to the certificate")
+parser.add_argument("--key-path", type=str, default=None, help="Path to the key")
+
+# cd src
+#  py -3.10 .\DiSboot.py --baseport 4440 --joinport 4440 --cert-path storage\127.0.0.1-4440.crt --key-path storage\127.0.0.1-4440.key --ca-path storage\ca.crt
+
+
 args = parser.parse_args()
 
-node = DiSNode(args.baseport,logger=logger)
+# # dbg patch
+# if args.baseport == 4441:
+#     args.ca_path = Path("storage\\ca.crt")
+#     args.cert_path = Path("storage\\127.0.0.1-4441.crt")
+#     args.key_path = Path("storage\\127.0.0.1-4441.key")
+
+if bool(args.ca_path is None) ^ bool(args.cert_path is None) ^ bool(args.key_path is None):
+    raise Exception("All three of --ca-path, --cert and --key must be specified or none of them")
+
+keypair = None
+ca = None
+
+if args.ca_path is not None:
+    logger.info("Loading CA certificate from " + args.ca_path)
+    logger.info("Loading certificate from " + args.cert_path)
+    logger.info("Loading key from " + args.key_path)
+
+    cert = Path(args.cert_path).open("r").read()
+    key = Path(args.key_path).open("r").read()
+    ca = Path(args.ca_path).open("r").read()
+    keypair = (cert, key)
+else:
+    ca = None
+    cert = None
+    key = None
+
+node = DiSNode(args.baseport,interface=args.interface, logger=logger, ca_content=ca, keypair_content=keypair)
+
 if args.joinport is not None:
     node.JOIN("127.0.0.1", args.joinport)
 
@@ -46,7 +81,7 @@ while True:
                 try:
                     port = input("Enter the port: ")
                     port = int(port)
-                    node.JOIN(host,port )
+                    node.JOIN(host, port)
                 except:
                     pass
                 print("\n")
@@ -64,7 +99,7 @@ while True:
             case "s":
                 info = input("Enter the info: ")
                 doc = InfoContainer(info)
-                res = node.Push(doc, dstport=node.Address[1], recurse=True,resolve=True, i_addr=node.Address)
+                res = node.Push(doc, dstport=node.Address[1], recurse=True, resolve=True, i_addr=node.Address)
                 logger.info(res)
             case _:
                 print(f"{repr(node)}")
