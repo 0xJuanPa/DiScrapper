@@ -154,8 +154,8 @@ class DiSTransport(Transport):
         self.timeout = timeout
         if keypair is not None and len(keypair) == 2 and ca_file is not None:
             self.context: ssl.SSLContext = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-            self.context.minimum_version = ssl.TLSVersion.TLSv1_3
-            self.context.maximum_version = ssl.TLSVersion.TLSv1_3
+            self.context.minimum_version = ssl.TLSVersion.TLSv1_2
+            self.context.maximum_version = ssl.TLSVersion.TLSv1_2
             self.context.check_hostname = False
             self.context.verify_flags = ssl.VerifyFlags.VERIFY_DEFAULT  # no crl check
             # context.verify_flags = ssl.VerifyFlags.VERIFY_CRL_CHECK_CHAIN  # crl check
@@ -214,8 +214,8 @@ class ThreadedXRPCServer(ThreadingMixIn, SimpleXMLRPCServer):
 
         if keypair is not None and len(keypair) == 2 and ca_file is not None:
             self.context: ssl.SSLContext = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-            self.context.minimum_version = ssl.TLSVersion.TLSv1_3
-            self.context.maximum_version = ssl.TLSVersion.TLSv1_3
+            self.context.minimum_version = ssl.TLSVersion.TLSv1_2
+            self.context.maximum_version = ssl.TLSVersion.TLSv1_2
             self.context.check_hostname = False
             self.context.verify_flags = ssl.VerifyFlags.VERIFY_DEFAULT  # no crl check
             # context.verify_flags = ssl.VerifyFlags.VERIFY_CRL_CHECK_CHAIN  # crl check
