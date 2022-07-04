@@ -384,8 +384,8 @@ class ChordNode(IdComparable):
             self.logger.error(f"Telling {n0} im broke {self.Address}")
             return "-"
 
-
-        belongs_to_my_range = self.id == id_ or predecessor.id < id_ < self.id  # between(L=predecessor.id, R=self.id, id_=id_)
+        # between(L=predecessor.id, R=self.id, id_=id_)
+        belongs_to_my_range =  predecessor.id < id_ <= self.id or predecessor.id > self.id and id_ <= self.id
         im_last_n_key_bigger_than_me = self.id > successor.id and id_ >= self.id
         # in case of remote call # or recurse and predecessor.Owner_of(id_, self.Address[1], False)
         is_from_predecessor_and_valid = predecessor.id == n0.id and (

@@ -81,7 +81,8 @@ class DiSNode(ChordNode):
             self.logger.warning("Scraping " + url + " level " + str(level))
             if level == 0:
                 return []
-            info = self.GET(id_)
+
+            info = self.database.find_like(id_)
             if info:
                 self.logger.warning("Found " + url + " in ring")
             else:
@@ -93,16 +94,18 @@ class DiSNode(ChordNode):
                 refs = self._get_links(domain, content)
                 info = InfoContainer(url, refs=refs, content=content)
                 self.Push(info, dstport=self.Address[1], recurse=True, resolve=False, i_addr=self.Address)
-            response.append(info.get_as_dict())
-            if level > 1:
-                for u in info.refs:
-                    try:
-                        v = self.SCRAP(level - 1, u)
-                    except Exception as e:
-                        self.logger.error(f"Failed scraping {u} error {e}")
-                        continue
-                    response.extend(v)
-            return response
+
+            if info:
+                response.append(info.get_as_dict())
+                if level > 1:
+                    for u in info.refs:
+                        try:
+                            v = self.SCRAP(level - 1, u)
+                        except Exception as e:
+                            self.logger.error(f"Failed scraping {u} error {e}")
+                            continue
+                        response.extend(v)
+        return response
 
     def DELETE(self, level, url_or_id, i_remote=None):
         level = int(level)
@@ -117,7 +120,7 @@ class DiSNode(ChordNode):
             if self.iterative_scheme and i_remote:
                 return RedirectNodeResponse(n0)
             try:
-               response.extend(n0.DELETE(level, id_))
+                response.extend(n0.DELETE(level, id_))
             except Exception as e:
                 self.logger.error("Failed deleting url " + url_or_id + f"in {n0} error {e}")
         else:
@@ -136,15 +139,19 @@ class DiSNode(ChordNode):
             id_ = int(url_or_id)
         except:
             id_ = self.hasher(url_or_id)
+
         n0 = self.Find_Successor(id_)
         if n0 != self:
             if self.iterative_scheme and i_remote:
                 return RedirectNodeResponse(n0)
             info = n0.GET(url_or_id)
         else:
-            info : InfoContainer = self.database.find_like(id_)
-            info = info.get_as_dict()
-        return info
+            info: InfoContainer = self.database.find_like(id_)
+
+        if info is None:
+            return None
+
+        return info.get_as_dict()
 
     def LIST(self):
         response = []
@@ -154,8 +161,8 @@ class DiSNode(ChordNode):
 
     def PEERS(self):
         peers = set()
-        peers.update(map(lambda e:str(tuple(e.Address)) if e is not None else None, self.r_successors))
-        peers.update(map(lambda e:str(tuple(e.Address)) if e is not None else None, self.finger))
+        peers.update(map(lambda e: str(tuple(e.Address)) if e is not None else None, self.r_successors))
+        peers.update(map(lambda e: str(tuple(e.Address)) if e is not None else None, self.finger))
         peers.add(str(tuple(self.Predecessor().Address)))
         if None in peers:
             peers.remove(None)
@@ -164,6 +171,8 @@ class DiSNode(ChordNode):
             peers.remove(s)
         return list(peers)
 
-# curl -L "http://127.0.0.1:4443/SCRAP/1/http://www.freecodecamp.org/news/how-to-redirect-http-to-https-using-htaccess/"
-# curl -L "http://127.0.0.1:4443/SCRAP/1/https://www.techwalla.com/articles/how-do-i-stop-links-from-redirecting-me-to-different-sites"
-# curl -L  http://127.0.0.1:4443/SCRAP/1/https://goo.gle"
+
+# curl -L --ssl-no-revoke "http://127.0.0.1:4443/SCRAP/1/http://www.freecodecamp.org/news/how-to-redirect-http-to-https-using-htaccess/"
+# curl -L --ssl-no-revoke"http://127.0.0.1:4443/SCRAP/1/https://www.techwalla.com/articles/how-do-i-stop-links-from-redirecting-me-to-different-sites"
+# curl -L --ssl-no-revoke  http://127.0.0.1:4443/SCRAP/1/https://goo.gle"
+# curl.exe -L --ssl-no-revoke  "https://127.0.0.1:4442/SCRAP/2/https://goo.gle"
