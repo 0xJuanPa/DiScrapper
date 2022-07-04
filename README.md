@@ -25,3 +25,4 @@ Written in pure python 3.10 with 0 external dependencies
 * Bypassing Rate Limiting on Webs
 * Load Balancing on Storage and Work
 
+For more info Refer to the [Wiki](https://github.com/0xJuanPa/DiScrapper/wiki)
