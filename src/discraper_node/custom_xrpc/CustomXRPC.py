@@ -51,7 +51,7 @@ class DiSRequestHandler(SimpleXMLRPCRequestHandler):
         self.end_headers()
         self.wfile.write(response)
 
-    def _report_500(self,e):
+    def _report_500(self, e):
         self.send_response(500)
         response = f'Internal Server Error {e}'
         self.send_header("Content-type", "text/plain")
@@ -76,11 +76,11 @@ class DiSRequestHandler(SimpleXMLRPCRequestHandler):
 
         meth = getattr(self.server.instance, method)
         meth_params = inspect.signature(meth).parameters
-        param_count = len(meth_params) - (1 if "i_remote" in meth_params else 0) # Self is not counted
+        param_count = len(meth_params) - (1 if "i_remote" in meth_params else 0)  # Self is not counted
         # qs = urlparse.parse_qs(url.query)
         if param_count > 0 and len(path) > 1:
             p = url.path.lstrip("/")
-            path = p.split("/",param_count) # +1 because of method
+            path = p.split("/", param_count)  # +1 because of method
             params = tuple(path[1:])
         else:
             params = tuple()
@@ -96,8 +96,8 @@ class DiSRequestHandler(SimpleXMLRPCRequestHandler):
             host = f"{result.Address[0]}:{result.Address[1]}"
             # new_url = urlparse.urlparse(self.request)
             # new_url._replace(netloc=host)
-            proto = "https://" if  isinstance(self.server.socket,ssl.SSLSocket) else "http://"
-            new_url =  proto  + host + self.path
+            proto = "https://" if isinstance(self.server.socket, ssl.SSLSocket) else "http://"
+            new_url = proto + host + self.path
             self.send_response(301)
             self.send_header("Location", new_url)
             self.end_headers()
@@ -137,7 +137,7 @@ class DiSRequestHandler(SimpleXMLRPCRequestHandler):
         if meth_params.get("i_addr", None):
             params = tuple(list(params) + [self.client_address])
         if meth_params.get("i_remote", None):
-            params = tuple(list(params) + [True])
+            params = tuple(list(params) + [1 if self.command == "POST" else 2])
         if len(params) > len(meth_params):
             raise Exception("Invalid call to Injected method")
         result = self.server._dispatch(method, params)
