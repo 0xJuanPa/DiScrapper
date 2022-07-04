@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO)
 
 parser = argparse.ArgumentParser(description='Boots a DiSnode')
 parser.add_argument("--interface", type=str, default="127.0.0.1", help="Interface to listen on")
-parser.add_argument('--baseport', type=int, default=4441, help='Base port')
+parser.add_argument('--baseport', type=int, default=4442, help='Base port')
 parser.add_argument("--joinport", type=int, default=4440, help="Port of the node to join")
 parser.add_argument("--ca-path", type=str, default=None, help="Path to the CA certificate")
 parser.add_argument("--cert-path", type=str, default=None, help="Path to the certificate")
@@ -31,7 +31,7 @@ args = parser.parse_args()
 #     args.cert_path = Path("storage\\127.0.0.1-4441.crt")
 #     args.key_path = Path("storage\\127.0.0.1-4441.key")
 
-if bool(args.ca_path is None) ^ bool(args.cert_path is None) ^ bool(args.key_path is None):
+if any(map(lambda e:e is None,[args.ca_path,args.cert_path,args.key_path])) and not all(map(lambda e:e is None,[args.ca_path,args.cert_path,args.key_path])):
     raise Exception("All three of --ca-path, --cert and --key must be specified or none of them")
 
 keypair = None

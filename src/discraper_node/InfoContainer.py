@@ -47,7 +47,7 @@ class InfoContainer(IdComparable):
 
     @property
     def Content(self):
-        return self.blob_file.read_text() if self.blob_file else self.blob_ram
+        return Path(self.blob_file).read_text() if self.blob_file != "" else self.blob_ram
 
     @property
     def Refs(self):
@@ -70,8 +70,10 @@ class InfoContainer(IdComparable):
         if self.descriptor_file:
             Path(self.descriptor_file).unlink()
 
-    def get_as_dict(self):
-        filtered = dict(filter(lambda x: x[0][0].isupper(),
-                               inspect.getmembers(self,
-                                                  lambda x: not inspect.ismethod(x) and not inspect.isclass(x))))
+    def get_as_dict(self) -> dict:
+        filtered = dict()
+        filtered["Address"] = self.Address
+        filtered["Id"] = self.Id
+        filtered["Refs"] = self.Refs
+        filtered["Content"] = self.Content
         return filtered

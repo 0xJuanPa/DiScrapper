@@ -75,7 +75,7 @@ class DiSNode(ChordNode):
                 res: InfoContainer = n0.SCRAP(level, url)
                 response.extend(res)
             except Exception as e:
-                self.logger.error("Failed getting url " + url + f"in {n0} error {e}")
+                self.logger.error("Failed getting url " + url + f" in {n0} error {e}")
         else:
             level = int(level)
             self.logger.warning("Scraping " + url + " level " + str(level))
@@ -84,19 +84,23 @@ class DiSNode(ChordNode):
 
             info = self.database.find_like(id_)
             if info:
-                self.logger.warning("Found " + url + " in ring")
+                self.logger.warning("Found " + str(url) + " in ring")
             else:
                 try:
                     domain, content = self._get_url(url)
+                    if len(content) == 0:
+                        raise Exception(f"Got Empty content in {url}")
                 except Exception as e:
-                    self.logger.error("Failed scrapping url " + url + f" error {e}")
+                    self.logger.error("Failed scrapping url " + str(url) + f" error {e}")
                     return []
                 refs = self._get_links(domain, content)
                 info = InfoContainer(url, refs=refs, content=content)
                 self.Push(info, dstport=self.Address[1], recurse=True, resolve=False, i_addr=self.Address)
 
             if info:
-                response.append(info.get_as_dict())
+                c = info.get_as_dict()
+                del c["Content"]
+                response.append(c)
                 if level > 1:
                     for u in info.refs:
                         try:
@@ -122,9 +126,9 @@ class DiSNode(ChordNode):
             try:
                 response.extend(n0.DELETE(level, id_))
             except Exception as e:
-                self.logger.error("Failed deleting url " + url_or_id + f"in {n0} error {e}")
+                self.logger.error("Failed deleting url " + url_or_id + f" in {n0} error {e}")
         else:
-            self.logger.warning("Deleting " + url_or_id + " level " + str(level))
+            self.logger.warning("Deleting " + str(url_or_id) + " level " + str(level))
             info: InfoContainer = self.database.find_like(id_)
             if info is not None:
                 response.append((info.Address, info.Id))
@@ -151,12 +155,14 @@ class DiSNode(ChordNode):
         if info is None:
             return None
 
-        return info.get_as_dict()
+        return info.Content
 
     def LIST(self):
         response = []
         for d in self.database:
-            response.append(d.get_as_dict())
+            c = d.get_as_dict()
+            del c["Content"]
+            response.append(c)
         return response
 
     def PEERS(self):
@@ -170,7 +176,6 @@ class DiSNode(ChordNode):
         if s in peers:
             peers.remove(s)
         return list(peers)
-
 
 # curl -L --ssl-no-revoke "http://127.0.0.1:4443/SCRAP/1/http://www.freecodecamp.org/news/how-to-redirect-http-to-https-using-htaccess/"
 # curl -L --ssl-no-revoke"http://127.0.0.1:4443/SCRAP/1/https://www.techwalla.com/articles/how-do-i-stop-links-from-redirecting-me-to-different-sites"
