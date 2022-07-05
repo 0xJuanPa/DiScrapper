@@ -27,18 +27,19 @@ def debug_d(self):
         logging.basicConfig(level=logging.DEBUG)
         logger.info(f"{debug} mode")
 
-    ip, port = os.environ.get(debug, "127.0.0.1:6000").split(":")
-    port = int(port)
-
-    while True:
-        try:
-            with Client((ip, port)) as client:
-                fing = list(map(lambda e: None if e is None else DeuggableIdAdrr(e), self.finger))
-                rsucc = list(map(lambda e: None if e is None else DeuggableIdAdrr(e), self.r_successors))
-                doc = list(map(lambda e: None if e is None else DeuggableIdAdrr(e), self.database))
-                client.send(
-                    (DeuggableIdAdrr(self), DeuggableIdAdrr(self.Predecessor()), DeuggableIdAdrr(self.Successor()),
-                     fing, rsucc, doc))
-        except Exception as e:
-            logger.debug(f"Debug thread failed {e}")
-        time.sleep(2)
+        dbgstr = os.environ.get(debug, "127.0.0.1:6000")
+        ip, port = dbgstr.split(":")
+        port = int(port)
+        print(f"Connecting to debug server... {ip}:{port}")
+        while True:
+            try:
+                with Client((ip, port)) as client:
+                    fing = list(map(lambda e: None if e is None else DeuggableIdAdrr(e), self.finger))
+                    rsucc = list(map(lambda e: None if e is None else DeuggableIdAdrr(e), self.r_successors))
+                    doc = list(map(lambda e: None if e is None else DeuggableIdAdrr(e), self.database))
+                    client.send(
+                        (DeuggableIdAdrr(self), DeuggableIdAdrr(self.Predecessor()), DeuggableIdAdrr(self.Successor()),
+                         fing, rsucc, doc))
+            except Exception as e:
+                logger.debug(f"Debug thread failed {e}")
+            time.sleep(2)

@@ -1,3 +1,10 @@
+import sys
+import os
+
+# add current dir to env var PYTHONPATH
+sys.path.append(os.getcwd())
+
+
 import argparse
 from pathlib import Path
 
@@ -14,16 +21,22 @@ logging.basicConfig(level=logging.INFO)
 parser = argparse.ArgumentParser(description='Boots a DiSnode')
 parser.add_argument("--interface", type=str, default="127.0.0.1", help="Interface to listen on")
 parser.add_argument('--baseport', type=int, default=4442, help='Base port')
-parser.add_argument("--joinport", type=int, default=4440, help="Port of the node to join")
+parser.add_argument("--joinaddr", type=str, default=None, help="addr ip:port of the node to join")
 parser.add_argument("--ca-path", type=str, default=None, help="Path to the CA certificate")
 parser.add_argument("--cert-path", type=str, default=None, help="Path to the certificate")
 parser.add_argument("--key-path", type=str, default=None, help="Path to the key")
+parser.add_argument("--dbg", type=str, default=None, help="Debug server string ip:port")
 
 # cd src
 #  py -3.10 .\DiSboot.py --baseport 4440 --joinport 4440 --cert-path storage\127.0.0.1-4440.crt --key-path storage\127.0.0.1-4440.key --ca-path storage\ca.crt
+#  py -3.10 .\DiSboot.py --baseport 4440
 
 
 args = parser.parse_args()
+
+if args.dbg is not None:
+    logger.info("Debug, server: %s", args.dbg)
+    os.environ["DEBUG"] = args.dbg
 
 # # dbg patch
 # if args.baseport == 4441:
@@ -53,8 +66,10 @@ else:
 
 node = DiSNode(args.baseport,interface=args.interface, logger=logger, ca_content=ca, keypair_content=keypair)
 
-if args.joinport is not None:
-    node.JOIN("127.0.0.1", args.joinport)
+if args.joinaddr is not None:
+    ip, port = args.joinaddr.split(":")
+    port = int(port)
+    node.JOIN(ip, port)
 
 while True:
     # menu

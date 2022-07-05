@@ -8,21 +8,23 @@ import streamlit as st
 import graphviz as graphviz
 from multiprocessing.connection import Listener
 from streamlit.scriptrunner.script_run_context import add_script_run_ctx
+import argparse
 
 from streamlit import cli as stcli
 
 DEBUG = True if 'DEBUG' in os.environ else False
 
 if not st._is_running_with_streamlit:
-    # parser = argparse.ArgumentParser(description='Testnet viewer')
-    # parser.add_argument('--dbgport', type=int, default=6000, help='Debug port')
-    # parser.add_argument('--stport', type=int, default=6000, help='Streamlit port')
-    # args = parser.parse_args()
-
-    print("Booting up...")
-    sys.argv = ["streamlit", "run", __file__]
+    parser = argparse.ArgumentParser(description='Testnet viewer')
+    parser.add_argument('--stport', type=int, default=8501, help='Streamlit port')
+    parser.add_argument('--dbg', type=int, default="6000", help='Debug port')
+    args = parser.parse_args()
+    os.environ["DBGPORT"] = str(args.dbg)
+    print(f"Booting up... on {args.stport} DBGSERVER:{args.dbg}")
+    sys.argv = ["streamlit", "run", __file__,f"--server.port",str(args.stport)]
     stcli.main()
     # sys.exit(stcli.main())
+    # stcli.main_run([__file__], **{"server_port":args.stport})
 
 
 class Visiblenode:
@@ -76,8 +78,9 @@ def config_and_listen():
     if len(listening) > 0:
         return
     listening.append(True)
-    print('starting listener')
-    listener = Listener(("127.0.0.1", 6000))
+    port = int(os.environ.get("DBGPORT"))
+    print('starting dbg server on port', port)
+    listener = Listener(("0.0.0.0", port))
     while True:
         try:
             conn = listener.accept()
